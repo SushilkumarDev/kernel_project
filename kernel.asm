@@ -1,32 +1,18 @@
-; kernel.asm - A simple bootloader/kernel in Assembly for x86 architecture
 
-[bits 32]              ; 32-bit mode
-[global _start]        ; entry point for the linker
+bits 32            ; Set the mode to 32-bit (important for x86 processors)
+section .text      ; Define the section where the code will reside (text section)
 
-section .text
+align 4            ; Align the code on a 4-byte boundary (important for processors)
+
+global _start      ; Define the global entry point for the linker
+extern kmain       ; Declare an external reference to the kmain function (defined in kernel.c)
+
 _start:
-    ; Set video mode to text (0x03)
-    mov ax, 0x03        ; 0x03 = 80x25 color text mode
-    int 0x10            ; BIOS interrupt for video services
+    cli             ; Clear interrupts (disable interrupts for setup)
 
-    ; Print "Hello, Kernel!" message
-    mov edx, msg        ; Address of message string
-    call print_string
+    ; Prepare the stack and pass control to the C code (kmain function)
+    call kmain      ; Jump to the kernel main function (defined in kernel.c)
+    
+    ; The CPU will continue execution from the kmain function, but we halt here
+    hlt             ; Halt the CPU (pause execution)
 
-    ; Halt the CPU (infinite loop)
-    hlt
-
-; Function to print a string to screen
-print_string:
-    mov ah, 0x0E        ; BIOS teletype function (TTY)
-.next_char:
-    lodsb               ; Load the next byte from string (AL = [ES:DI])
-    or al, al           ; Check if we reached the end of string
-    jz .done            ; If zero (null terminator), jump to done
-    int 0x10            ; BIOS interrupt to print character in AL
-    jmp .next_char      ; Loop through the next character
-.done:
-    ret                 ; Return from function
-
-section .data
-msg db 'Hello, Kernel!', 0  ; Null-terminated string
